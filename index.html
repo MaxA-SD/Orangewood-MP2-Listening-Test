@@ -1,0 +1,437 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Orangewood MP2 EQ Tests</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#14161A;
+    --panel:#1C1F24;
+    --panel-border:#2B3037;
+    --track:#282D34;
+    --text:#ECE9E2;
+    --muted:#868D97;
+    --amber:#FFA53E;
+    --amber-dim: rgba(255,165,62,0.15);
+    --green:#4FBE7E;
+    --red:#E5533D;
+  }
+  *{ box-sizing:border-box; }
+  html,body{ margin:0; padding:0; }
+  body{
+    background:var(--bg);
+    color:var(--text);
+    font-family:'IBM Plex Sans', system-ui, sans-serif;
+    min-height:100vh;
+    display:flex;
+    justify-content:center;
+    padding:48px 20px 80px;
+  }
+  .page{ width:100%; max-width:640px; }
+  .masthead{ margin-bottom:28px; }
+  .kicker{
+    font-family:'IBM Plex Mono', monospace;
+    font-size:11px;
+    letter-spacing:.14em;
+    text-transform:uppercase;
+    color:var(--muted);
+    display:flex; align-items:center; gap:8px;
+  }
+  .kicker::before{
+    content:""; width:6px; height:6px; border-radius:50%;
+    background:var(--amber); box-shadow:0 0 6px var(--amber);
+  }
+  .masthead h1{
+    font-family:'IBM Plex Mono', monospace;
+    font-weight:600; font-size:20px; margin:6px 0 0; color:var(--text);
+  }
+  .category{
+    position:relative;
+    background:var(--panel);
+    border:1px solid var(--panel-border);
+    border-radius:10px;
+    padding:22px 24px 20px;
+    box-shadow: 0 1px 0 rgba(255,255,255,0.02) inset, 0 12px 28px rgba(0,0,0,0.28);
+  }
+  .screw{
+    position:absolute; width:5px; height:5px; border-radius:50%;
+    background:#3a4048;
+    box-shadow: inset 0 1px 1px rgba(0,0,0,0.6), 0 1px 0 rgba(255,255,255,0.04);
+  }
+  .screw.tl{ top:9px; left:9px; } .screw.tr{ top:9px; right:9px; }
+  .screw.bl{ bottom:9px; left:9px; } .screw.br{ bottom:9px; right:9px; }
+
+  .category-header{ display:flex; align-items:flex-start; justify-content:space-between; gap:16px; }
+  .category-title-group{ display:flex; flex-direction:column; gap:2px; }
+  .category-index{
+    font-family:'IBM Plex Mono', monospace; font-size:10px; letter-spacing:.12em;
+    color:var(--muted); text-transform:uppercase;
+  }
+  .category-title{ font-family:'IBM Plex Mono', monospace; font-size:19px; font-weight:600; margin:0; color:var(--text); }
+  .category-sub{
+    font-family:'IBM Plex Mono', monospace; font-size:11px; color:var(--muted);
+    margin-top:4px; min-height:14px; transition:opacity .4s ease;
+  }
+  .header-right{ display:flex; align-items:center; gap:14px; flex-shrink:0; }
+  .time-readout{ font-family:'IBM Plex Mono', monospace; font-size:13px; color:var(--muted); white-space:nowrap; }
+  .stop-btn{
+    font-family:'IBM Plex Mono', monospace; font-size:11px; font-weight:600; letter-spacing:.06em;
+    color:#F2C9BF;
+    background:linear-gradient(#3a2420,#2b1a17);
+    border:1px solid #5b2c24;
+    border-radius:5px;
+    padding:7px 12px;
+    cursor:pointer;
+    box-shadow: 0 1px 0 rgba(255,255,255,0.03) inset, 0 2px 4px rgba(0,0,0,0.3);
+  }
+  .stop-btn:hover{ border-color:var(--red); color:#fff; }
+  .stop-btn:active{ box-shadow: inset 0 2px 4px rgba(0,0,0,0.5); }
+  .stop-btn:focus-visible, .file-btn:focus-visible{ outline:2px solid var(--amber); outline-offset:2px; }
+
+  .progress-track{ height:3px; background:var(--track); border-radius:2px; margin:18px 0 6px; overflow:hidden; }
+  .progress-fill{ height:100%; width:0%; background:var(--amber); box-shadow:0 0 6px var(--amber); }
+
+  .file-list{ list-style:none; margin:14px 0 0; padding:0; display:flex; flex-direction:column; gap:2px; }
+  .file-row{
+    display:flex; align-items:center; gap:12px;
+    padding:10px 10px;
+    border-radius:6px;
+    border-left:3px solid transparent;
+    transition: background .2s ease, border-color .2s ease;
+  }
+  .file-row.active{ background:var(--amber-dim); border-left-color:var(--amber); }
+
+  .file-btn{
+    width:30px; height:30px; flex-shrink:0;
+    border-radius:50%;
+    border:1px solid var(--panel-border);
+    background:#20242A;
+    color:var(--text);
+    display:flex; align-items:center; justify-content:center;
+    cursor:pointer;
+  }
+  .file-row.active .file-btn{ border-color:var(--amber); color:var(--amber); }
+  .file-btn:disabled{ opacity:.35; cursor:not-allowed; }
+  .file-btn .tri{ font-size:11px; margin-left:2px; }
+  .eq-bars{ display:flex; align-items:flex-end; gap:2px; height:12px; }
+  .eq-bars span{ width:2px; background:var(--amber); animation: eq 0.9s ease-in-out infinite; }
+  .eq-bars span:nth-child(1){ height:40%; animation-delay:0s; }
+  .eq-bars span:nth-child(2){ height:100%; animation-delay:.2s; }
+  .eq-bars span:nth-child(3){ height:65%; animation-delay:.4s; }
+  @keyframes eq{ 0%,100%{ transform:scaleY(.4); } 50%{ transform:scaleY(1); } }
+  @media (prefers-reduced-motion: reduce){ .eq-bars span{ animation:none; } }
+
+  .file-label{ font-family:'IBM Plex Mono', monospace; font-size:14px; flex:1; }
+  .file-status{ display:flex; align-items:center; gap:6px; font-family:'IBM Plex Mono', monospace; font-size:10px; letter-spacing:.08em; color:var(--muted); text-transform:uppercase; }
+  .dot{ width:6px; height:6px; border-radius:50%; background:var(--muted); flex-shrink:0; }
+  .dot.ready{ background:var(--green); box-shadow:0 0 5px var(--green); }
+  .dot.stream{ background:transparent; border:1.5px solid var(--amber); }
+  .dot.error{ background:var(--red); }
+  .dot.loading{ background:var(--muted); animation:pulse 1s ease-in-out infinite; }
+  @keyframes pulse{ 0%,100%{ opacity:.3; } 50%{ opacity:1; } }
+  @media (prefers-reduced-motion: reduce){ .dot.loading{ animation:none; } }
+
+  footer.hint{ font-family:'IBM Plex Sans', sans-serif; font-size:12px; color:var(--muted); margin-top:20px; text-align:center; line-height:1.5; }
+
+  @media (max-width:480px){
+    body{ padding:32px 14px 60px; }
+    .category{ padding:18px 16px 16px; }
+    .category-title{ font-size:17px; }
+    .header-right{ gap:10px; }
+    .time-readout{ font-size:11px; }
+  }
+</style>
+</head>
+<body>
+<div class="page">
+  <div class="masthead">
+    <div class="kicker">Listening Test</div>
+    <h1>Orangewood MP2 EQ Tests</h1>
+  </div>
+  <main id="categories"></main>
+  <footer class="hint">Switching versions inside a category jumps to the same position. Selecting a version in another category starts it from the beginning.</footer>
+</div>
+
+<script>
+(function(){
+  const CONFIG = [
+    {
+      name: "Strum",
+      files: [
+        { label: "Original 50Hz Resonance", url: "https://www.dropbox.com/scl/fi/ma4ih5q2nrbz0ngc8izgk/MP2-Orangewood-EQ-Tests-Original-5dB-50Hz-Strum.wav?rlkey=7fzug9ye1e7j4ogwnwvcmr4nq&st=6gq8zego&dl=0" },
+        { label: "No Resonance", url: "https://www.dropbox.com/scl/fi/nr9qrbptz3eabcd993kvv/MP2-Orangewood-EQ-Tests-No-Resonance-Strum.wav?rlkey=s0l3s1an55n82n4aoum0em2n3&st=3c65kdwz&dl=0" },
+        { label: "80Hz Resonance", url: "https://www.dropbox.com/scl/fi/5e98uxrceglzn357r80xk/MP2-Orangewood-EQ-Tests-80Hz-Resonance-Strum.wav?rlkey=g2c5jge4bpju9h9vtqskq5fnp&st=9hxhb55n&dl=0" },
+        { label: "Hi-Shelf -6dB", url: "https://www.dropbox.com/scl/fi/j0uiyl6svbyr9ej8pnp0a/MP2-Orangewood-EQ-Tests-Hi-Shelf-6dB-Strum.wav?rlkey=1n501w4uz4f3tygp3mjdhn0tm&st=uvf6r2it&dl=0" },
+        { label: "Lowpass 4kHz", url: "https://www.dropbox.com/scl/fi/aai960l2ln5vm8rkwhxnx/MP2-Orangewood-EQ-Tests-Lowpass-Strum.wav?rlkey=jiftghmxxmae55dqihd7ce0e0&st=3zgzmsl6&dl=0" }
+      ]
+    },
+    {
+      name: "Fingerpick",
+      files: [
+        { label: "Original 50Hz Resonance", url: "https://www.dropbox.com/scl/fi/ciecoga8r2eop5bx5kreu/MP2-Orangewood-EQ-Tests-Original-5dB-50Hz-Fingerpick.wav?rlkey=l4qt4nw4xr54ewxestcidw192&st=lyv9w90q&dl=0" },
+        { label: "No Resonance", url: "https://www.dropbox.com/scl/fi/81or75nubbmdge13z5o3u/MP2-Orangewood-EQ-Tests-No-Resonance-Fingerpick.wav?rlkey=vzsmpagbuw6klnowhrnq52eon&st=k79wv6mc&dl=0" },
+        { label: "80Hz Resonance", url: "https://www.dropbox.com/scl/fi/g4cl3pogmqbsx8gm75gxu/MP2-Orangewood-EQ-Tests-80Hz-Resonance-Fingerpick.wav?rlkey=ud57t6rfvkuh34ef1uf10w9gz&st=8pobeo6u&dl=0" },
+        { label: "Hi-Shelf -6dB", url: "https://www.dropbox.com/scl/fi/ovwy0pwehvwdtoelqieon/MP2-Orangewood-EQ-Tests-Hi-Shelf-6dB-Fingerpick.wav?rlkey=uc6zbxt8x74mle2ynulep0oqj&st=wntqqg0n&dl=0" },
+        { label: "Lowpass 4kHz", url: "https://www.dropbox.com/scl/fi/vkvgwgv65dshqjrtgfbx9/MP2-Orangewood-EQ-Tests-Lowpass-Fingerpick.wav?rlkey=bltsqyr4k4ix20p17sbkwfw2k&st=iy843vxu&dl=0" }
+      ]
+    }
+  ];
+
+  function toDirectUrl(raw){
+    try{
+      const u = new URL(raw);
+      const host = u.hostname;
+      if(host.indexOf('dropbox.com') !== -1){
+        u.hostname = 'dl.dropboxusercontent.com';
+        u.searchParams.delete('dl');
+        u.searchParams.set('raw','1');
+        return u.toString();
+      }
+      if(host.indexOf('sharepoint.com') !== -1 || host.indexOf('1drv.ms') !== -1){
+        u.searchParams.set('download','1');
+        return u.toString();
+      }
+      return raw;
+    }catch(e){ return raw; }
+  }
+
+  function fmtTime(sec){
+    if(!isFinite(sec) || sec < 0) sec = 0;
+    const m = Math.floor(sec/60);
+    const s = Math.floor(sec%60);
+    return m + ':' + String(s).padStart(2,'0');
+  }
+
+  const AudioCtx = window.AudioContext || window.webkitAudioContext;
+  const ctx = new AudioCtx();
+  const root = document.getElementById('categories');
+
+  let activeCategory = null;
+  const stopFns = [];
+
+  CONFIG.forEach((cat, catIdx) => buildCategory(cat, catIdx));
+
+  function buildCategory(cat, catIdx){
+    const state = {
+      buffers: new Array(cat.files.length).fill(null),
+      fallbackEls: new Array(cat.files.length).fill(null),
+      status: new Array(cat.files.length).fill('loading'),
+      currentIndex: null,
+      isPlaying: false,
+      startCtxTime: 0,
+      startOffset: 0,
+      sourceNode: null,
+      fallbackEl: null,
+      raf: null
+    };
+
+    const section = document.createElement('section');
+    section.className = 'category';
+    section.innerHTML = `
+      <span class="screw tl"></span><span class="screw tr"></span>
+      <span class="screw bl"></span><span class="screw br"></span>
+      <div class="category-header">
+        <div class="category-title-group">
+          <!-- <span class="category-index">CH.${String(catIdx+1).padStart(2,'0')}</span> -->
+          <h2 class="category-title"></h2>
+          <span class="category-sub" aria-live="polite"></span>
+        </div>
+        <div class="header-right">
+          <span class="time-readout">0:00 / 0:00</span>
+          <button class="stop-btn" type="button">■ STOP</button>
+        </div>
+      </div>
+      <div class="progress-track"><div class="progress-fill"></div></div>
+      <ul class="file-list"></ul>
+    `;
+    section.querySelector('.category-title').textContent = cat.name;
+    const subEl = section.querySelector('.category-sub');
+    const timeEl = section.querySelector('.time-readout');
+    const fillEl = section.querySelector('.progress-fill');
+    const listEl = section.querySelector('.file-list');
+    const stopBtn = section.querySelector('.stop-btn');
+
+    const rows = cat.files.map((f, i) => {
+      const li = document.createElement('li');
+      li.className = 'file-row';
+      li.innerHTML = `
+        <button class="file-btn" type="button" aria-label="Play ${f.label}" disabled>
+          <span class="tri">▶</span>
+        </button>
+        <span class="file-label">${f.label}</span>
+        <span class="file-status"><span class="dot loading"></span><span class="status-text">Loading</span></span>
+      `;
+      listEl.appendChild(li);
+      li.querySelector('.file-btn').addEventListener('click', () => playFile(i));
+      return li;
+    });
+
+    root.appendChild(section);
+
+    function setRowStatus(i, status){
+      state.status[i] = status;
+      const row = rows[i];
+      const dot = row.querySelector('.dot');
+      const text = row.querySelector('.status-text');
+      const btn = row.querySelector('.file-btn');
+      dot.className = 'dot ' + (status === 'ready' ? 'ready' : status === 'stream' ? 'stream' : status === 'error' ? 'error' : 'loading');
+      text.textContent = status === 'ready' ? 'Ready' : status === 'stream' ? 'Stream' : status === 'error' ? 'Error' : 'Loading';
+      btn.disabled = (status === 'loading' || status === 'error');
+      updateSub();
+    }
+
+    function updateSub(){
+      const doneCount = state.status.filter(s => s !== 'loading').length;
+      if(doneCount < cat.files.length){
+        subEl.textContent = `Preloading ${doneCount}/${cat.files.length}…`;
+        subEl.style.opacity = '1';
+      } else {
+        subEl.style.opacity = '0';
+      }
+    }
+
+    function currentDuration(){
+      if(state.currentIndex === null) return 0;
+      if(state.status[state.currentIndex] === 'ready'){
+        const b = state.buffers[state.currentIndex];
+        return b ? b.duration : 0;
+      } else if(state.fallbackEl){
+        return state.fallbackEl.duration || 0;
+      }
+      return 0;
+    }
+
+    function position(){
+      if(state.currentIndex === null || !state.isPlaying) return state.startOffset;
+      if(state.status[state.currentIndex] === 'ready'){
+        const dur = currentDuration();
+        if(dur <= 0) return state.startOffset;
+        const sinceStart = ctx.currentTime - state.startCtxTime;
+        const firstSegment = dur - state.startOffset;
+        if(sinceStart < firstSegment) return state.startOffset + sinceStart;
+        return (sinceStart - firstSegment) % dur;
+      } else if(state.fallbackEl){
+        return state.fallbackEl.currentTime;
+      }
+      return state.startOffset;
+    }
+
+    function tick(){
+      const dur = currentDuration();
+      const pos = position();
+      timeEl.textContent = fmtTime(pos) + ' / ' + fmtTime(dur);
+      fillEl.style.width = dur > 0 ? Math.min(100, (pos/dur)*100) + '%' : '0%';
+      if(state.isPlaying){
+        state.raf = requestAnimationFrame(tick);
+      }
+    }
+
+    function highlightActive(){
+      rows.forEach((row, i) => {
+        const on = i === state.currentIndex && state.isPlaying;
+        row.classList.toggle('active', on);
+        const btn = row.querySelector('.file-btn');
+        btn.innerHTML = on ? '<span class="eq-bars"><span></span><span></span><span></span></span>' : '<span class="tri">▶</span>';
+        btn.setAttribute('aria-label', (on ? 'Playing ' : 'Play ') + cat.files[i].label);
+      });
+    }
+
+    function stopEngine(){
+      if(state.sourceNode){
+        try{ state.sourceNode.stop(); }catch(e){}
+        state.sourceNode.disconnect();
+        state.sourceNode = null;
+      }
+      if(state.fallbackEl){
+        state.fallbackEl.pause();
+        state.fallbackEl = null;
+      }
+      if(state.raf){ cancelAnimationFrame(state.raf); state.raf = null; }
+    }
+
+    function startAt(i, offset){
+      const status = state.status[i];
+      if(status === 'ready'){
+        const node = ctx.createBufferSource();
+        node.buffer = state.buffers[i];
+        node.loop = true;
+        node.connect(ctx.destination);
+        const dur = node.buffer.duration;
+        const safeOffset = dur > 0 ? ((offset % dur) + dur) % dur : 0;
+        node.start(0, safeOffset);
+        state.sourceNode = node;
+        state.startCtxTime = ctx.currentTime;
+        state.startOffset = safeOffset;
+      } else if(status === 'stream'){
+        const el = state.fallbackEls[i];
+        el.loop = true;
+        const dur = el.duration || 0;
+        const safeOffset = dur > 0 ? ((offset % dur) + dur) % dur : offset;
+        el.currentTime = safeOffset;
+        el.play().catch(()=>{});
+        state.fallbackEl = el;
+        state.startOffset = safeOffset;
+      } else {
+        return;
+      }
+      state.currentIndex = i;
+      state.isPlaying = true;
+      highlightActive();
+      tick();
+    }
+
+    function playFile(i){
+      if(state.status[i] !== 'ready' && state.status[i] !== 'stream') return;
+      if(ctx.state === 'suspended') ctx.resume();
+      if(activeCategory !== null && activeCategory !== catIdx && stopFns[activeCategory]){
+        stopFns[activeCategory]();
+      }
+      activeCategory = catIdx;
+      const offset = state.isPlaying ? position() : 0;
+      stopEngine();
+      startAt(i, offset);
+    }
+
+    function fullStop(){
+      stopEngine();
+      state.isPlaying = false;
+      state.currentIndex = null;
+      state.startOffset = 0;
+      highlightActive();
+      timeEl.textContent = '0:00 / ' + fmtTime(currentDuration());
+      fillEl.style.width = '0%';
+    }
+
+    stopBtn.addEventListener('click', () => {
+      fullStop();
+      if(activeCategory === catIdx) activeCategory = null;
+    });
+
+    stopFns[catIdx] = fullStop;
+
+    cat.files.forEach((f, i) => {
+      const direct = toDirectUrl(f.url);
+      fetch(direct).then(res => {
+        if(!res.ok) throw new Error('HTTP ' + res.status);
+        return res.arrayBuffer();
+      }).then(buf => ctx.decodeAudioData(buf)).then(audioBuffer => {
+        state.buffers[i] = audioBuffer;
+        setRowStatus(i, 'ready');
+      }).catch(() => {
+        const el = new Audio();
+        el.preload = 'auto';
+        el.src = direct;
+        el.addEventListener('loadedmetadata', () => setRowStatus(i, 'stream'), { once:true });
+        el.addEventListener('error', () => setRowStatus(i, 'error'), { once:true });
+        state.fallbackEls[i] = el;
+      });
+    });
+  }
+})();
+</script>
+</body>
+</html>
